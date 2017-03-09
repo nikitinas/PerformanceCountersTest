@@ -17,7 +17,7 @@ namespace SampleApp
         private const string PidCounterName = "ID Process";
         private const string PidResolvingCategoryName = "Process";
 
-        public static void Main(string[] args)
+        public static void Main()
         {
             try
             {
@@ -33,12 +33,12 @@ namespace SampleApp
                     .Select(c => new PerformanceCounter("Process", c, instanceName))
                     .ToArray();
 
-                bool stop = false;
+                byte stop = 0;
 
                 Console.WriteLine("Press any key to stop...");
                 new Thread(_ => ReadCounters(counters, ref stop)).Start();
                 Console.ReadKey();
-                stop = true;
+                Thread.VolatileWrite(ref stop, 1);
             }
             catch (Exception e)
             {
@@ -47,9 +47,9 @@ namespace SampleApp
             }
         }
 
-        private static void ReadCounters(PerformanceCounter[] counters, ref bool stop)
+        private static void ReadCounters(PerformanceCounter[] counters, ref byte stop)
         {
-            while (!stop)
+            while (Thread.VolatileRead(ref stop) == 0)
             {
                 foreach (var c in counters)
                 {
